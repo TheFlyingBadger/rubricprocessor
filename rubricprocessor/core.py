@@ -12,14 +12,14 @@ from   os             import getenv              \
                             ,remove              \
                             ,stat
 from   pathlib        import Path
-from   sqlite3        import connect as SQLconnect
+import sqlite3        
 from   zipfile        import ZipFile             \
                             ,ZIP_DEFLATED
 #
 ###############################################################################################################################################################
 #
-GLOBAL_INDEX              = 0
-MAX_WORKSHEET_NAME_LENGTH = 31
+GLOBAL_INDEX              : int = 0
+MAX_WORKSHEET_NAME_LENGTH : int = 31
 #
 ###############################################################################################################################################################
 #
@@ -30,7 +30,7 @@ def nextGI():
 #
 ###############################################################################################################################################################
 #
-def getFileFromZip (zipFileName, fileNameInZip):
+def getFileFromZip (zipFileName : str, fileNameInZip : str) -> BytesIO:
     with ZipFile(zipFileName,'r') as my_zip_file:
        theFile = BytesIO(my_zip_file.read(fileNameInZip))
     #print (type(theFile))
@@ -38,7 +38,7 @@ def getFileFromZip (zipFileName, fileNameInZip):
 #
 ###############################################################################################################################################################
 #
-def removekey(d, key):
+def removekey(d : dict, key : str) -> dict:
     r = dict(d)
     if key in r:
         del r[key]
@@ -46,12 +46,12 @@ def removekey(d, key):
 #
 ###############################################################################################################################################################
 #
-def isNumeric (val):
+def isNumeric (val : str) -> bool:
     return val.replace('.','',1).isdigit()
 #
 ###############################################################################################################################################################
 #
-def StringToBoolean (val):
+def StringToBoolean (val) -> bool:
     if isinstance(val, (list,pd.core.series.Series)):
         r = []
         for x in val:
@@ -62,7 +62,7 @@ def StringToBoolean (val):
 #
 ###############################################################################################################################################################
 #
-def checkDictKeyValueNumeric (d, k):
+def checkDictKeyValueNumeric (d : dict, k : str) -> dict:
     r = d
     if (k not in r
      or r[k] == "null"
@@ -76,7 +76,7 @@ def checkDictKeyValueNumeric (d, k):
 #
 ###############################################################################################################################################################
 #
-def getXMLFromZip (data, fileName, outFile = ""):
+def getXMLFromZip (data : dict, fileName : str, outFile : str = "") -> BytesIO:
     theFile = (getFileFromZip (data['ZIPFILE'], fileName)).getvalue()
     if  (data['WRITE_DATA_XML']
      and outFile is not None
@@ -138,7 +138,7 @@ def getElementID (e, element, ns = "", nsmap = ""):
 #
 ###############################################################################################################################################################
 #
-def getStudentGUID (conn, username):
+def getStudentGUID (conn : sqlite3.connection, username : str) -> str:
     with conn:
         cur  = conn.cursor()
         cur.execute(f"SELECT GUID FROM gradecentre where username = \'{username}\'")
@@ -156,7 +156,7 @@ def getStudentGUID (conn, username):
 #
 ###############################################################################################################################################################
 #
-def getStudentGUIDfromID (conn, studentid):
+def getStudentGUIDfromID (conn : sqlite3.connection, studentid : str) -> str:
     with conn:
         cur  = conn.cursor()
         cur.execute(f"SELECT GUID FROM users where id = \'{studentid}\'")
@@ -174,7 +174,7 @@ def getStudentGUIDfromID (conn, studentid):
 #
 ###############################################################################################################################################################
 #
-def to_xml(df, filename=None, mode='w', itemTag = "item", itemsTag = "items"):
+def to_xml(df  : pd.DataFrame, filename=None, mode='w', itemTag = "item", itemsTag = "items") -> str:
     def row_to_xml(row):
         xml = [f'<{itemTag}>']
         for i, col_name in enumerate(row.index):
@@ -192,7 +192,7 @@ def to_xml(df, filename=None, mode='w', itemTag = "item", itemsTag = "items"):
 #
 ###############################################################################################################################################################
 #
-def to_JSON (data, df, filename=None):
+def to_JSON (data : dict, df, filename=None) -> str:
     # without the reset_index we don't get the index column in the data
     the_JSON = df.reset_index().to_json(orient = "records",index = True)
     from json import dumps, loads
@@ -207,14 +207,14 @@ def to_JSON (data, df, filename=None):
 #
 ###############################################################################################################################################################
 #
-def to_json (data, df, filename=None):
+def to_json (data : dict, df, filename=None):
     # this version just calls the other, but doesn't return a value
-    theJSON = to_JSON (data, df, filename)
+    theJSON = to_JSON (data : dict, df, filename)
     theJSON = None
 #
 ###############################################################################################################################################################
 #
-def backupDB (connSrc, connDest):
+def backupDB (connSrc -> sqlite3.connection, connDest -> sqlite3.connection):
     # def progress(status, remaining, total):
         # print(f'Copied {total-remaining} of {total} pages...')
     with connDest:
@@ -222,11 +222,11 @@ def backupDB (connSrc, connDest):
 #
 ###############################################################################################################################################################
 #
-def backupDBtoFile (data, conn):
+def backupDBtoFile (data : dict, conn : sqlite3.connection):
     destDB = data['SQLLITE_OUTPUT']
     # print (destDB)
     # print (f"Backing up to '{destDB}'")
-    bck = SQLconnect(destDB)
+    bck = sqlite3.connect(destDB)
     backupDB (connSrc = conn, connDest = bck)
     bck.close()
     destDB = None
@@ -234,30 +234,30 @@ def backupDBtoFile (data, conn):
 #
 ###############################################################################################################################################################
 #
-def createDBConnection(data,reloadFromFile = True):
-    conn = SQLconnect(':memory:')
+def createDBConnection(data : dict,reloadFromFile = True) -> sqlite3.connection:
+    conn = sqlite3.connect(':memory:')
     if reloadFromFile and path.isfile(data['SQLLITE']):
-        src = SQLconnect(data['SQLLITE'])
+        src = sqlite3.connect(data['SQLLITE'])
         backupDB (connSrc = src, connDest = conn)
     return conn
 #
 ###############################################################################################################################################################
 #
-def removeFolder (folderName):
+def removeFolder (folderName : str):
     if path.exists(folderName):
         from   shutil         import rmtree
         rmtree(folderName)
 #
 ###############################################################################################################################################################
 #
-def createOrClearFolder (folderName):
+def createOrClearFolder (folderName : str):
     removeFolder(folderName)
     from os import makedirs
     makedirs(folderName)
 #
 ###############################################################################################################################################################
 #
-def createZipArchive(data, deleteAfterwards = False):
+def createZipArchive(data : dict, deleteAfterwards : bool = False) -> dict:
     if path.isfile(data['SQLLITE_OUTPUT']):
         deleteIfExists(data['SQLLITE'])
         from shutil import copyfile
@@ -292,17 +292,17 @@ def createZipArchive(data, deleteAfterwards = False):
 #
 ###############################################################################################################################################################
 #
-def SQLtoDF (conn, sqlStm):
+def SQLtoDF (conn : sqlite3.connection, sqlStm : str) -> pd.DataFrame:
     return  pd.read_sql_query(sqlStm,conn)
 #
 ###############################################################################################################################################################
 #
-def tableToDF (conn, table):
+def tableToDF (conn : sqlite3.connection, table : str) -> pd.DataFrame:
     return  SQLtoDF (conn,f'SELECT t.* FROM {table} t')
 #
 ###############################################################################################################################################################
 #
-def DFtoCSV (df, filename):
+def DFtoCSV (df : pd.DataFrame, filename : str):
     df.to_csv (path_or_buf = filename
               ,sep         = ','
               ,na_rep      = ''
@@ -312,27 +312,27 @@ def DFtoCSV (df, filename):
 #
 ###############################################################################################################################################################
 #
-def SQLtoCSV (conn, sqlStm, filename):
+def SQLtoCSV (conn : sqlite3.connection, sqlStm : str, filename : str):
     DFtoCSV (SQLtoDF(conn,sqlStm),filename)
 #
 ###############################################################################################################################################################
 #
-def tableToCSV (conn, table, filename):
+def tableToCSV (conn : sqlite3.connection, table : str, filename : str):
     DFtoCSV (tableToDF(conn,table),filename)
 #
 ###############################################################################################################################################################
 #
-def dateTimeFromEpoch (ms):
+def dateTimeFromEpoch (ms : int) -> datetime:
     return datetime.fromtimestamp(ms)
 #
 ###############################################################################################################################################################
 #
-def dateTimeStringFromEpoch (ms):
+def dateTimeStringFromEpoch (ms : int) -> str:
     return dateTimeFromEpoch(ms).strftime('%Y-%m-%d %H:%M:%S')
 #
 ###############################################################################################################################################################
 #
-def sizeof_fmt(num, suffix='B'):
+def sizeof_fmt(num : int , suffix : str ='B') -> str:
     for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
         if abs(num) < 1024.0:
             return "%3.1f%s%s" % (num, unit, suffix)
@@ -341,7 +341,7 @@ def sizeof_fmt(num, suffix='B'):
 #
 ###############################################################################################################################################################
 #
-def DFToSQL (df, table, con):
+def DFToSQL (df : pd.DataFrame, table : str, con : sqlite3.connection) -> pd.DataFrame:
     # print ('*'*80)
     # print (table)
     defaultVClen = 255
@@ -389,12 +389,12 @@ def DFToSQL (df, table, con):
 #
 ###############################################################################################################################################################
 #
-def dfToSQL (df, table, con):
+def dfToSQL (df : pd.DataFrame, table : str, con : sqlite3.connection):
     df = DFToSQL(df, table, con)
 #
 ###############################################################################################################################################################
 #
-def replaceBRwithLF (str_in):
+def replaceBRwithLF (str_in : str) -> str:
     str_out  = str_in
     with_    = '\n'
     for what in ['<br>'
@@ -409,7 +409,7 @@ def replaceBRwithLF (str_in):
 #
 ###############################################################################################################################################################
 #
-def guessMimeType (filePath):
+def guessMimeType (filePath : str) -> str:
     from   mimetypes  import guess_type
     mime = guess_type(filePath)[0]
     if mime is None:
@@ -418,7 +418,7 @@ def guessMimeType (filePath):
 #
 ###############################################################################################################################################################
 #
-def ensureFiletype (filePath, mimeTypes):
+def ensureFiletype (filePath : str, mimeTypes):
     if isinstance(mimeTypes,str):
         mimeTypes = [mimeTypes]
     fileMime   = guessMimeType(filePath)
@@ -428,8 +428,8 @@ def ensureFiletype (filePath, mimeTypes):
 #
 ###############################################################################################################################################################
 #
-def checkFileExists (filePath
-                    ,ensureRW = False
+def checkFileExists (filePath : str
+                    ,ensureRW : bool = False
                     ):
     if not path.exists(filePath):
         # Check the folder exists
@@ -445,7 +445,7 @@ def checkFileExists (filePath
 #
 ###############################################################################################################################################################
 #
-def checkFileWritable (filePath):
+def checkFileWritable (filePath : str):
     #
     # this one doesn't care if the file does not exist, only that it's writable
     #
@@ -467,7 +467,7 @@ def checkFileWritable (filePath):
 #
 ###############################################################################################################################################################
 #
-def touch(fname, mode=0o666, dir_fd=None, **kwargs):
+def touch(fname : str, mode : int =0o666, dir_fd=None, **kwargs):
     from os import open, O_CREAT, O_APPEND, fdopen, supports_fd, utime
     flags = O_CREAT | O_APPEND
     with fdopen(open(fname, flags=flags, mode=mode, dir_fd=dir_fd)) as f:
@@ -475,8 +475,8 @@ def touch(fname, mode=0o666, dir_fd=None, **kwargs):
 #
 ###############################################################################################################################################################
 #
-def ensureFiletypeCSV (filePath
-                      ,headersFirstRow = True
+def ensureFiletypeCSV (filePath        : str
+                      ,headersFirstRow : bool = True
                       ):
     ensureFiletype (filePath  = filePath
                    ,mimeTypes = ['text/comma-separated-values'
@@ -494,7 +494,7 @@ def ensureFiletypeCSV (filePath
 #
 ###############################################################################################################################################################
 #
-def gradeCentreCheck (gcFilePath):
+def gradeCentreCheck (gcFilePath : str):
     ensureFiletypeCSV (filePath  = gcFilePath)
     _gradeCentre ({'GRADECENTRE_CSV' : gcFilePath
                   }
@@ -502,7 +502,7 @@ def gradeCentreCheck (gcFilePath):
 #
 ###############################################################################################################################################################
 #
-def _gradeCentre (data):
+def _gradeCentre (data : dict) -> dict:
     # ### read the GradeCentre CSV file
     gc = pd.read_csv(data['GRADECENTRE_CSV'])
 
@@ -556,14 +556,15 @@ def _gradeCentre (data):
 #
 ###############################################################################################################################################################
 #
-def gradeCentre (data, conn):
+def gradeCentre (data : dict, conn : sqlite3.connection) -> dict:
     gc = _gradeCentre (data)
     gc.to_sql ('gradecentre', con=conn)
     to_json(data,gc,path.join(data['TEMP_FOLDER'],"gradecentre.json"))
+    return data
 #
 ###############################################################################################################################################################
 #
-def imsManifestCheck (zipFileName):
+def imsManifestCheck (zipFileName -> str):
     ensureFiletype (filePath  = zipFileName
                    ,mimeTypes = ['application/zip'
                                 ,'application/x-compressed'
@@ -579,7 +580,7 @@ def imsManifestCheck (zipFileName):
 #
 ###############################################################################################################################################################
 #
-def _imsManifest (data):
+def _imsManifest (data : dict) -> dict:
     types = {}
     wantedTypes = ["course/x-bb-coursesetting"
                   ,"course/x-bb-rubrics"
@@ -644,7 +645,7 @@ def _imsManifest (data):
 #
 ###############################################################################################################################################################
 #
-def imsmanifest (data, conn):
+def imsmanifest (data : dict, conn : sqlite3.connection) -> dict:
 
     manifest = _imsManifest (data)
     dfToSQL (manifest["df"], 'manifest', con=conn)
@@ -654,7 +655,7 @@ def imsmanifest (data, conn):
 #
 ###############################################################################################################################################################
 #
-def deleteIfExists(filePath):
+def deleteIfExists(filePath: str):
     if path.isfile(filePath):
         try:
             remove(filePath)
@@ -663,7 +664,7 @@ def deleteIfExists(filePath):
 #
 ###############################################################################################################################################################
 #
-def createBatchMetadata (data, conn, types):
+def createBatchMetadata (data : dict, conn : sqlite3.connection, types : dict) -> dict:
     from   getpass        import getuser
     batchMetadata = data
     batchMetadata["Source Filename"] = data['ZIPFILE']
@@ -700,7 +701,7 @@ def createBatchMetadata (data, conn, types):
 #
 ###############################################################################################################################################################
 #
-def getFileForType(name, data, types):
+def getFileForType(name : str, data : dict, types : dict) -> str:
     if name not in types:
         raise Exception(f"{name} not defined")
     files = types[name]
@@ -712,7 +713,7 @@ def getFileForType(name, data, types):
 #
 ###############################################################################################################################################################
 #
-def x_bb_coursesetting (data, conn, types):
+def x_bb_coursesetting (data : dict, conn : sqlite3.connection, types : dict) -> dict:
 
     xml       = getFileForType('course/x-bb-coursesetting', data, types)
     courseXML = xml.xpath("/COURSE")
@@ -734,10 +735,11 @@ def x_bb_coursesetting (data, conn, types):
     courses   = None
     courseXML = None
     xml       = None
+    return data
 #
 ###############################################################################################################################################################
 #
-def x_bb_user (data, conn, types):
+def x_bb_user (data : dict, conn : sqlite3.connection, types : dict) -> dict:
     xml  = getFileForType("course/x-bb-user", data, types)
     users = []
     for userXML in xml.xpath('/USERS/USER'):
@@ -764,10 +766,11 @@ def x_bb_user (data, conn, types):
     users    = None
     usersXML = None
     xml      = None
+    return data
 #
 ###############################################################################################################################################################
 #
-def x_bb_coursemembership (data, conn, types):
+def x_bb_coursemembership (data : dict, conn : sqlite3.connection, types : dict) -> dict:
     xml  = getFileForType("membership/x-bb-coursemembership", data, types)
     membsXML = xml.xpath('/COURSEMEMBERSHIPS/COURSEMEMBERSHIP')
     membs = []
@@ -788,10 +791,11 @@ def x_bb_coursemembership (data, conn, types):
     membs    = None
     membsXML = None
     xml      = None
+    return data
 #
 ###############################################################################################################################################################
 #
-def x_bb_rubrics (data, conn, types):
+def x_bb_rubrics (data : dict, conn : sqlite3.connection, types : dict) -> dict:
     xml               = getFileForType("course/x-bb-rubrics", data, types)
     rubricsXML        = xml.xpath('/LEARNRUBRICS/Rubric')
 
@@ -876,10 +880,12 @@ def x_bb_rubrics (data, conn, types):
         dframes[df["ix"]] = df
 
     dframes           = None
+
+    return data
 #
 ###############################################################################################################################################################
 #
-def x_bb_crsrubricassocation (data, conn, types):
+def x_bb_crsrubricassocation (data : dict, conn : sqlite3.connection, types : dict) -> dict:
     xml               = getFileForType("course/x-bb-crsrubricassocation", data, types)
     rassocsXML        = xml.xpath('/COURSERUBRICASSOCIATIONS/ASSOCIATION')
     ra = []
@@ -909,10 +915,11 @@ def x_bb_crsrubricassocation (data, conn, types):
     ra         = None
     rassocsXML = None
     xml        = None
+    return data
 #
 ###############################################################################################################################################################
 #
-def x_bb_crsrubriceval (data, conn, types):
+def x_bb_crsrubriceval (data : dict, conn : sqlite3.connection, types):
     xml               = getFileForType("course/x-bb-crsrubriceval", data, types)
     revalsXML        = xml.xpath('/RUBRIC_EVALUATION_COLLECTION/RUBRIC_EVALUATION')
     revals = []
@@ -1015,134 +1022,8 @@ def x_bb_crsrubriceval (data, conn, types):
 #
 ###############################################################################################################################################################
 #
-def x_bb_gradebook (data, conn, types):
+def x_bb_gradebook (data : dict, conn : sqlite3.connection, types):
     xml               = getFileForType("course/x-bb-gradebook", data, types)
-
-    # cats = []
-
-    # for catXML in xml.xpath('/GRADEBOOK/CATEGORIES/CATEGORY'):
-        # cat = {"ix" : nextGI()
-              # ,"id" : getAttr(catXML,'id')
-              # }
-
-        # def getValue (ele):
-            # key = ele.replace('_','').lower()
-            # cat[key] = getElementValue(catXML,ele)
-        # def getValueBool (ele):
-            # key = ele.replace('_','').lower()
-            # cat[key] = strtobool(getElementValue(catXML,ele))
-        # getValue("TITLE")
-        # cat["description"]    = getElementText(catXML,'DESCRIPTION')
-        # getValueBool("ISUSERDEFINED")
-        # getValueBool("ISCALCULATED")
-        # getValueBool("ISSCORABLE")
-
-        # cats.append (cat)
-        # cat = None
-
-    # scales       = []
-    # scaleSymbols = []
-    # for scaleXML in xml.xpath('/GRADEBOOK/SCALES/SCALE'):
-        # scale = {"ix" : nextGI()
-                # ,"id" : getAttr(scaleXML,'id')
-                # }
-        # def getValue (ele):
-            # key = ele.replace('_','').lower()
-            # scale[key] = getElementValue(scaleXML,ele)
-        # def getValueBool (ele):
-            # key = ele.replace('_','').lower()
-            # scale[key] = strtobool(getElementValue(scaleXML,ele))
-
-        # getValue("TITLE")
-        # getValueBool("ISUSERDEFINED")
-        # getValueBool("ISTABULARSCALE")
-        # getValueBool("ISPERCENTAGE")
-        # getValueBool("ISNUMERIC")
-        # getValue("TYPE")
-        # getValue("VERSION")
-        # scale["scaleSymbolCnt"] = 0
-
-        # for ssXML in scaleXML.xpath('./SYMBOLS/SYMBOL'):
-            # scaleSymbol = {"id" : getAttr(ssXML,'id')
-                          # ,"scaleid" : scale["id"]
-                          # }
-            # scale["scaleSymbolCnt"] += 1
-            # def getValue2 (ele):
-                # key = ele.replace('_','').lower()
-                # scaleSymbol[key] = getElementValue(ssXML,ele)
-            # getValue("TITLE")
-            # #getValue("LOWERBOUND")
-            # #getValue("UPPERBOUND")
-            # #getValue("ABSOLUTETRANSLATION")
-
-            # scaleSymbols.append (scaleSymbol)
-            # scaleSymbol = None
-
-        # scales.append(scale)
-        # scale = None
-
-    # outcomeDefns = []
-    # for defnXML in xml.xpath('/GRADEBOOK/OUTCOMEDEFINITIONS/OUTCOMEDEFINITION'):
-        # outcomeDefn = {"ix" : nextGI()
-                      # ,"id" : getAttr(defnXML,'id')
-                      # }
-        # def getValue (ele):
-            # key = ele.replace('_','').lower()
-            # outcomeDefn[key] = getElementValue(defnXML,ele)
-        # def getValueBool (ele):
-            # key = ele.replace('_','').lower()
-            # outcomeDefn[key] = strtobool(getElementValue(defnXML,ele))
-        # getValue ("CATEGORYID")
-        # getValue ("SCALEID")
-        # getValue ("SECONDARY_SCALEID")
-        # getValue ("CONTENTID")
-        # getValue ("GRADING_PERIODID")
-        # getValue ("ASIDATAID")
-        # getValue ("TITLE")
-        # getValue ("DISPLAY_TITLE")
-        # getValue ("POSITION")
-        # getValue ("VERSION")
-        # getValue ("DELETED")
-        # getValue ("EXTERNALREF")
-        # getValue ("HANDLERURL")
-        # getValue ("ANALYSISURL")
-        # getValue ("WEIGHT")
-        # getValue ("POINTSPOSSIBLE")
-        # getValueBool ("ISVISIBLE")
-        # getValueBool ("VISIBLE_BOOK")
-        # getValueBool ("VISIBLE_ALL_TERMS")
-        # getValueBool ("SHOW_STATS_TO_STUDENT")
-        # getValueBool ("HIDEATTEMPT")
-        # getValue ("AGGREGATIONMODEL")
-        # getValue ("SCORE_PROVIDER_HANDLE")
-        # getValueBool ("SINGLE_ATTEMPT")
-        # getValue ("CALCULATIONTYPE")
-        # getValueBool ("ISCALCULATED")
-        # getValueBool ("ISSCORABLE")
-        # getValueBool ("ISUSERCREATED")
-        # getValue ("MULTIPLEATTEMPTS")
-        # getValue ("IS_DELEGATED_GRADING")
-        # getValue ("IS_ANONYMOUS_GRADING")
-      # #      <DATES>
-       # #     <CREATED value=""/>
-        # #    <UPDATED value="2019-11-25 18:06:44 AWST"/>
-         # #   <DUE value=""/>
-          # #  <ANON_GRADING_REL_DATE value=""/>
-          # #</DATES>
-          # #<DESCRIPTION>
-    # #        <TEXT>&lt;p&gt;The unweighted sum of all grades for a user.&lt;/p&gt;</TEXT>
-    # #        <TYPE value="H"/>
-     # #     </DESCRIPTION>
-    # #
-     # #     <ACTIVITY_COUNT_COL_DEFS/>
-      # #    <IS_DELEGATED_GRADING value="false"/>
-       # #   <IS_ANONYMOUS_GRADING value="false"/>
-        # #  <GROUPATTEMPTS/>
-         # # <OUTCOMES/>
-
-        # outcomeDefns.append(outcomeDefn)
-        # outcomeDefn = None
-
 
     gradeHistEntries = []
     for gheXML in xml.xpath('/GRADEBOOK/GRADE_HISTORY_ENTRIES/GRADE_HISTORY_ENTRY'):
@@ -1235,7 +1116,7 @@ def x_bb_gradebook (data, conn, types):
 #
 ###############################################################################################################################################################
 #
-def processZipFile(data, conn):
+def processZipFile(data : dict, conn : sqlite3.connection) -> dict:
 
     types = imsmanifest (data, conn)
 
@@ -1275,7 +1156,7 @@ def processZipFile(data, conn):
 #
 ###############################################################################################################################################################
 #
-def applyAbbreviations (inStr, targetLen = -1, truncate = True):
+def applyAbbreviations (inStr : str, targetLen : int = -1, truncate : bool = True) -> str:
 
     # targetLen of Zero means that we'll just shorten as much as possible (but truncating makes no sense)
     lastResortTruncate = (truncate and not (targetLen <= 0))
@@ -1352,14 +1233,13 @@ def applyAbbreviations (inStr, targetLen = -1, truncate = True):
 #
 ###############################################################################################################################################################
 #
-def createViewsAndOutput (data, conn):
+def createViewsAndOutput (data : dict, conn : sqlite3.connection):
     outputExcel = []
 
-
-    def checkSheetName (sheetname):
+    def checkSheetName (sheetname : str) -> str:
         return applyAbbreviations(sheetname,MAX_WORKSHEET_NAME_LENGTH)
 
-    def ExcelSheet(sheetName, viewName,colFreeze = 1, rowFreeze = 1, transposeDF = False):
+    def ExcelSheet(sheetName : str, viewName : str,colFreeze : int = 1, rowFreeze : int = 1, transposeDF : bool = False) -> dict:
         sheetName_ = checkSheetName(sheetName)
         sht = {"sheet"    : sheetName_
               ,"viewName" : viewName
@@ -1601,9 +1481,7 @@ def createViewsAndOutput (data, conn):
 #
 ###############################################################################################################################################################
 #
-def doAllProcessing (data):
-
-    # print (data)
+def doAllProcessing (data : dict) -> dict:
 
     # ### Create the folder for the outputs if it doesn't exist already
     # #### Delete any files that are in there otherwise
@@ -1639,7 +1517,7 @@ def doAllProcessing (data):
 #
 #############################################s##################################################################################################################
 #
-def process (zipfile, gradecentreCSV, outputFolder, writeXML = True, writeJSON = True, preserveDB = True):
+def process (zipfile : str, gradecentreCSV : str, outputFolder : str, writeXML : bool = True, writeJSON : bool = True, preserveDB : bool = True) -> dict:
 
     ddict = {"ZIPFILE"         : zipfile
             ,"GRADECENTRE_CSV" : gradecentreCSV
@@ -1650,7 +1528,7 @@ def process (zipfile, gradecentreCSV, outputFolder, writeXML = True, writeJSON =
             }
 
     ddict = doAllProcessing(data = ddict)
-    # print (ddict)
+ 
     dictMap = [('OUTPUT_FOLDER','Folder',False)
               ,('EXCEL_OUTPUT','Excel',True)
               ,('SQLLITE_OUTPUT','Database',True)
@@ -1667,21 +1545,6 @@ def process (zipfile, gradecentreCSV, outputFolder, writeXML = True, writeJSON =
             rdict[quay[1]] = dictVal
         else:
             rdict[quay[1]] = None
-    # print (rdict)
+    
     return rdict
-    # dlist = [{"key" : k, "value" : v} for k, v in ddict.items()]
-    # print ((dlist))
-    # # rdict = {'EXCEL_OUTPUT' : ddict['EXCEL_OUTPUT']
-            # # ,
-            # # }
-
-# if __name__ == '__main__':
-    # data = {"ZIPFILE"            : 'ArchiveFile_ACC3201.2019.2.ONCAMPUS_OFFCAMPUS_20191126085012.zip'
-           # ,"GRADECENTRE_CSV"    : "gc_ACC3201_2019_2_ONCAMPUS_OFFCA.csv"
-           # ,"WRITE_DATA_XML"     : True
-           # ,"WRITE_DATA_JSON"    : True
-           # }
-    # data["OUTPUT_FOLDER"]   = f"."
-    # data["TEMP_FOLDER"]     = f"{path.splitext(data['ZIPFILE'])[0]}"
-    # data = doAllProcessing (data)
-    # print (data)
+    

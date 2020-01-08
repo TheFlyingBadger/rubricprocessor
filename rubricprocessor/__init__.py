@@ -10,24 +10,24 @@ from . import core, gui, batch
 __all__ = ['runFromCLI','guiLaunch','processSingle','processBatch']
 
 
-def isNotNull (arg):
+def isNotNull (arg : str) -> bool:
     return not isNull (arg)
 
-def isNull (arg):
+def isNull (arg : str) -> bool:
     return (arg is None or len(arg) == 0)
 
-def isWritable(path):
+def isWritable(path : str) -> bool:
     # import os
     # return os.access(path, os.W_OK)
 
     writable = True
 
+    #
+    # this should be done with tempfile, but there's an ancient python bug on windows
+    #   https://bugs.python.org/issue22107
+    #
     import errno
     try:
-        #
-        # this should be done with tempfile, but there's an ancient python bug on windows
-        #   https://bugs.python.org/issue22107
-        #
         fname    = os.path.join(path,os.urandom(32).hex())
         with open(fname,'w') as f:
             f.write(fname)
@@ -38,41 +38,38 @@ def isWritable(path):
         else:
             e.filename = path
             raise
+
     return writable
 
-def touch(fname, mode=0o666, dir_fd=None, **kwargs):
-    flags = os.O_CREAT | os.O_APPEND
-    with os.fdopen(os.open(fname, flags=flags, mode=mode, dir_fd=dir_fd)) as f:
-        os.utime(f.fileno() if os.utime in os.supports_fd else fname, dir_fd=None if os.supports_fd else dir_fd, **kwargs)
-
-def _setTheCommonArgs (args, outputFolder, writeXML = True, writeJSON = True, preserveDB = True):
+def _setTheCommonArgs (args : dict, outputFolder : str, writeXML : bool = True, writeJSON : bool = True, preserveDB : bool = True) -> dict:
     args.output      = outputFolder
     args.writeNoXML  = not (writeXML)
     args.writeNoJSON = not (writeJSON)
     args.keepDB      = preserveDB
     return processArgs(args)
 
-def processSingle (zipfile, gradecentreCSV, outputFolder, writeXML = True, writeJSON = True, preserveDB = True):
+def processSingle (zipfile : str, gradecentreCSV : str, outputFolder : str, writeXML : bool = True, writeJSON : bool = True, preserveDB : bool = True) -> dict:
     args = argparse.Namespace()
     args.mode        = 'cli'
     args.rubric      = zipfile
     args.gc          = gradecentreCSV
     return _setTheCommonArgs(args, outputFolder,writeXML,writeJSON,preserveDB)
 
-def processBatch (control, outputFolder, writeXML = True, writeJSON = True, preserveDB = True):
+def processBatch (control : str, outputFolder : str, writeXML : bool = True, writeJSON : bool = True, preserveDB : bool = True) -> dict:
     args = argparse.Namespace()
     args.mode        = 'batch'
     args.control     = control
     return _setTheCommonArgs(args, outputFolder,writeXML,writeJSON,preserveDB)
 
-def guiLaunch (zipfile = None, gradecentreCSV = None, outputFolder = None, writeXML = True, writeJSON = True, preserveDB = True):
+def guiLaunch (zipfile : str = None, gradecentreCSV : str = None, outputFolder : str = None, writeXML : bool = True, writeJSON : bool = True, preserveDB : bool = True) -> dict:
     args = argparse.Namespace()
     args.mode        = 'gui'
     args.rubric      = zipfile
     args.gc          = gradecentreCSV
     return _setTheCommonArgs(args, outputFolder,writeXML,writeJSON,preserveDB)
 
-def processArgs (args):
+def processArgs (args : dict) -> dict:
+
     vArgs = vars(args)
 
     # "NVL" args
@@ -113,7 +110,7 @@ def processArgs (args):
             raise PermissionError (f"output - folder \'{args.output}\' not writable")
     #
 
-    def printIfThere (dict,label, key=""):
+    def printIfThere (dict : dict,label : str, key : str =""):
         def wrapVar (var):
             retval = var
             if type(retval) == str and var.find(' ') >= 0:

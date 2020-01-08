@@ -4,17 +4,17 @@ from . import core
 import rubricprocessor
 import pandas as pd
 
-def checkControlFile (filePath):
+def checkControlFile (filePath : str):
    core.checkFileExists (filePath = filePath
                         ,ensureRW = True
                         )
    core.ensureFiletypeCSV (filePath = filePath)
 
-def ensureColumn (cols, colName):
+def ensureColumn (cols : list, colName : str):
    if colName not in cols:
       raise Exception(f"Required column \'{colName}\' not present")
 
-def getControlFile (filePath):
+def getControlFile (filePath : str) -> pd.DataFrame:
 
    checkControlFile (filePath)
    df = pd.read_csv(filePath)
@@ -35,23 +35,30 @@ def getControlFile (filePath):
    # print (cols)
    return df
 
-def getNow():
+def getNow() -> str:
    from datetime import datetime
    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-def process (control, outputFolder, writeXML = True, writeJSON = True, preserveDB = True):
+def process (control : str, outputFolder : str, writeXML : bool = True, writeJSON : bool  = True, preserveDB  : bool = True) -> dict:
 
-   rdict = {"Folder"        : outputFolder
-           ,"timeBegin"     : getNow()
-           ,"timeEnd"       : None
-           ,"rowsControl"   : 0
-           ,"rowsProcessed" : 0
-           ,"rowsError"     : 0
-           }
+   # rdict = {"Folder"        : outputFolder
+   #         ,"timeBegin"     : getNow()
+   #         ,"timeEnd"       : None
+   #         ,"rowsControl"   : 0
+   #         ,"rowsProcessed" : 0
+   #         ,"rowsError"     : 0
+   #         }
+   rdict = dict (Folder        = outputFolder
+                ,timeBegin     = getNow()
+                ,timeEnd       = None
+                ,rowsControl   = 0
+                ,rowsProcessed = 0
+                ,rowsError     = 0
+                )
 
    df = getControlFile (filePath = control)
 
-   for index, row in df.iterrows():
+   for row in df.iterrows()[1]:
 
       rdict["rowsControl"] += 1
 

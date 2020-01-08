@@ -4,7 +4,7 @@
 This file contains the binary representation for the icons used in the GUI
 """
 
-def getIconDict():
+def getIconDict() -> dict:
    # print ("getIconDict")
    from PyQt5.QtCore import QByteArray
    from PyQt5.QtGui import QIcon, QPixmap

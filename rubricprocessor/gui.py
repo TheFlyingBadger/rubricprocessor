@@ -19,7 +19,9 @@ from PyQt5.QtWidgets import QApplication     \
                            ,QPushButton      \
                            ,QTextEdit        \
                            ,QWidget
-from PyQt5.QtGui     import QCursor
+from PyQt5.QtGui     import QCursor \
+                           ,QPixmap\
+                           ,QIcon
 from PyQt5.QtCore    import QSize            \
                            ,Qt
 
@@ -27,22 +29,22 @@ winTitleDefault = 'Rubric Processor'
 
 iconDict = {}
 
-def getIconDict (usage,key):
+def getIconDict (usage : str,key : str):
    if usage not in iconDict:
       raise KeyError (f"\'{usage}\' not specified")
    elif key not in iconDict[usage]:
       raise KeyError (f"\'{key}\' not valid for \'{usage}\'")
    return iconDict[usage][key]
 
-def getIconIcon (usage):
+def getIconIcon (usage : str) -> QIcon:
    return getIconDict(usage,"icon")
 
-def getIconPixmap (usage):
+def getIconPixmap (usage : str) -> QPixmap:
    return getIconDict(usage,"pixmap")
 
 
 
-def getShortenedDirForDisplay (inDir):
+def getShortenedDirForDisplay (inDir : str) -> str:
     if inDir is None:
         outDir = ""
     else:
@@ -512,7 +514,7 @@ def reverseErrorStack (etype, value, tb):
 def error_handler(etype, value, tb):
    msg = MyMessageBox()
    msg.setIcon(QMessageBox.Critical)
-   msg.setWindowIcon(iconFromBase64(windowIconBase64))
+   msg.setWindowIcon(getIconIcon("window"))
    msg.setText("An exception has occurred")
    msg.setWindowTitle(winTitleDefault)
    msg.setDetailedText(reverseErrorStack(etype, value, tb))
@@ -521,7 +523,7 @@ def error_handler(etype, value, tb):
    msg.setDefaultButton(QMessageBox.Ok)
    retval = msg.exec_()
 
-def launch (zipfile = None, gradecentreCSV = None, outputFolder = None, writeXML = True, writeJSON = True, preserveDB = True):
+def launch (zipfile : str = None, gradecentreCSV : str  = None, outputFolder : str  = None, writeXML : bool = True, writeJSON : bool = True, preserveDB : bool = True):
    global iconDict
    sys.excepthook = error_handler  # redirect std error
    app    = QApplication(sys.argv)
